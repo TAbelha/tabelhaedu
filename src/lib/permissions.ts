@@ -41,7 +41,7 @@ export const roles = {
 export type RoleName = keyof typeof roles;
 
 export type Permission = Partial<{
-	[K in keyof typeof statement]: (typeof statement)[K][number][];
+	[K in keyof typeof statement]: readonly (typeof statement)[K][number][];
 }>;
 
 function isRoleName(name: string): name is RoleName {

@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { Db } from '../db/index';
-import { orgDomain, orgSettings } from '../db/schema/index';
+import { orgDomain, orgSettings, organization } from '../db/schema/index';
 import { ConflictError, NotFoundError } from '../errors';
 import { normalizeHost, type OrgSettings } from './resolve';
 
@@ -43,4 +43,36 @@ export async function removeDomain(db: Db, orgId: string, hostname: string): Pro
 		)
 		.returning({ hostname: orgDomain.hostname });
 	if (removed.length === 0) throw new NotFoundError();
+}
+
+export async function listDomains(db: Db, orgId: string) {
+	return db
+		.select({ hostname: orgDomain.hostname, isPrimary: orgDomain.isPrimary })
+		.from(orgDomain)
+		.where(eq(orgDomain.organizationId, orgId))
+		.orderBy(desc(orgDomain.isPrimary), orgDomain.hostname);
+}
+
+export async function updateOrgProfile(
+	db: Db,
+	orgId: string,
+	input: { name: string; logo: string | null }
+): Promise<void> {
+	await db.update(organization).set(input).where(eq(organization.id, orgId));
+}
+
+export async function listOrganizations(db: Db) {
+	return db
+		.select({
+			id: organization.id,
+			name: organization.name,
+			slug: organization.slug,
+			primaryDomain: orgDomain.hostname
+		})
+		.from(organization)
+		.leftJoin(
+			orgDomain,
+			and(eq(orgDomain.organizationId, organization.id), eq(orgDomain.isPrimary, true))
+		)
+		.orderBy(organization.name);
 }

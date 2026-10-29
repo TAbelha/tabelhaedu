@@ -2,21 +2,13 @@ import { sequence, type Handle } from '@sveltejs/kit/hooks';
 import { building } from '$app/env';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { and, eq } from 'drizzle-orm';
-import { createAuth, type Auth } from '#lib/server/auth/index.js';
+import { resolveAccess } from '#lib/server/access.js';
+import { getAuth } from '#lib/server/auth/instance.js';
 import { member } from '#lib/server/db/schema/index.js';
 import { getPlatform } from '#lib/server/platform.js';
-import { normalizeHost, resolveOrg, type OrgContext } from '#lib/server/tenant/resolve.js';
+import { orgCache } from '#lib/server/tenant/cache.js';
+import { normalizeHost, resolveOrg } from '#lib/server/tenant/resolve.js';
 import { orgHead } from '#lib/server/tenant/theme.js';
-
-const ORG_CACHE_TTL_MS = 60_000;
-const orgCache = new Map<string, { org: OrgContext | null; expires: number }>();
-let auth: Auth | undefined;
-
-function getAuth(): Auth {
-	const { d1, cfg, authSecret } = getPlatform();
-	auth ??= createAuth(d1, { ...cfg, secret: authSecret });
-	return auth;
-}
 
 const locals: Handle = ({ event, resolve }) => {
 	event.locals.org = null;
@@ -31,12 +23,12 @@ const org: Handle = async ({ event, resolve }) => {
 	if (building) return resolve(event);
 	const host = normalizeHost(event.url.host);
 	const cached = orgCache.get(host);
-	if (cached && cached.expires > Date.now()) {
+	if (cached) {
 		event.locals.org = cached.org;
 	} else {
 		const { db, cfg } = getPlatform();
 		event.locals.org = await resolveOrg(db, host, cfg.defaultOrgSlug);
-		orgCache.set(host, { org: event.locals.org, expires: Date.now() + ORG_CACHE_TTL_MS });
+		orgCache.set(host, event.locals.org);
 	}
 	return resolve(event);
 };
@@ -57,16 +49,22 @@ const session: Handle = async ({ event, resolve }) => {
 };
 
 const roles: Handle = async ({ event, resolve }) => {
-	const { org, user } = event.locals;
-	if (org && user) {
-		const { db, cfg } = getPlatform();
-		const [row] = await db
-			.select({ role: member.role })
-			.from(member)
-			.where(and(eq(member.organizationId, org.id), eq(member.userId, user.id)))
-			.limit(1);
-		event.locals.memberRole = row?.role ?? null;
-		event.locals.isPlatformAdmin = cfg.platformAdmins.includes(user.email.toLowerCase());
+	const { db, cfg } = building ? { db: null, cfg: null } : getPlatform();
+	if (db && cfg) {
+		const access = await resolveAccess(
+			{ orgId: event.locals.org?.id ?? null, user: event.locals.user },
+			cfg.platformAdmins,
+			async (orgId, userId) => {
+				const [row] = await db
+					.select({ role: member.role })
+					.from(member)
+					.where(and(eq(member.organizationId, orgId), eq(member.userId, userId)))
+					.limit(1);
+				return row?.role ?? null;
+			}
+		);
+		event.locals.memberRole = access.memberRole;
+		event.locals.isPlatformAdmin = access.isPlatformAdmin;
 	}
 	return resolve(event);
 };
