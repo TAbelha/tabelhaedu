@@ -1,6 +1,8 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "tabelhaedu",
+	// TAbelha account: pinned so a deploy never lands on whatever account wrangler is logged into.
+	"account_id": "51d9588a9e9d129018a324f7fa8133b6",
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"compatibility_date": "2026-10-29",
 	"compatibility_flags": ["nodejs_compat"],
@@ -11,11 +13,11 @@
 		{
 			"binding": "DB",
 			"database_name": "tabelhaedu-db",
-			"database_id": "5ce8bb55-31a3-43ac-b09d-fa5c0aae75b9",
+			"database_id": "b59da48d-f4c7-452a-acd6-ba4f3dc48d81",
 			"migrations_dir": "drizzle"
 		}
 	],
 	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "tabelhaedu-media" }],
-	"vars": { "APP_HOSTS": "tabelhaedu.rubra.workers.dev", "DEFAULT_ORG_SLUG": "" },
+	"vars": { "APP_HOSTS": "tabelhaedu.tabelha.workers.dev", "DEFAULT_ORG_SLUG": "" },
 	"observability": { "enabled": true }
 }
