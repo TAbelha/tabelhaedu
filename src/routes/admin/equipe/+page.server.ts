@@ -5,7 +5,12 @@ import { authErrorMessage } from '#lib/server/auth/errors.js';
 import { firstIssue } from '#lib/server/forms.js';
 import { requireStaff } from '#lib/server/guards.js';
 import { getPlatform } from '#lib/server/platform.js';
-import { listMembers, listPendingInvitations } from '#lib/server/team/repo.js';
+import { NotFoundError } from '#lib/server/errors.js';
+import {
+	getPendingInvitation,
+	listMembers,
+	listPendingInvitations
+} from '#lib/server/team/repo.js';
 import { inviteInput } from '#lib/server/tenant/input.js';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -50,9 +55,15 @@ export const actions: Actions = {
 		}
 	},
 	cancel: async ({ locals, request }) => {
-		requireStaff(locals, { invitation: ['cancel'] });
+		const { org } = requireStaff(locals, { invitation: ['cancel'] });
 		const parsed = idInput.safeParse(await fields(request));
 		if (!parsed.success) return fail(400, { message: firstIssue(parsed.error) });
+		try {
+			await getPendingInvitation(getPlatform().db, org.id, parsed.data.id);
+		} catch (e) {
+			if (e instanceof NotFoundError) return fail(404, { message: 'Convite não encontrado.' });
+			throw e;
+		}
 		try {
 			await getAuth().api.cancelInvitation({
 				headers: request.headers,

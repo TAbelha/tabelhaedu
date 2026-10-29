@@ -3,7 +3,8 @@ import type { Db } from '../db/index';
 import { invitation, member, user } from '../db/schema/index';
 import { createTestDb } from '../testing/db';
 import { insertOrg } from '../testing/fixtures';
-import { listMembers, listPendingInvitations } from './repo';
+import { NotFoundError } from '../errors';
+import { getPendingInvitation, listMembers, listPendingInvitations } from './repo';
 
 describe('team repo', () => {
 	let db: Db;
@@ -81,5 +82,42 @@ describe('team repo', () => {
 		const pending = await listPendingInvitations(db, orgA);
 		expect(pending.map((i) => i.id)).toEqual(['i1']);
 		expect(pending[0]).toMatchObject({ email: 'p@example.com', role: 'teacher' });
+	});
+});
+
+describe('getPendingInvitation', () => {
+	it("finds the org's own pending invitation and hides other orgs'", async () => {
+		const db = await createTestDb();
+		const orgA = await insertOrg(db, 'a');
+		const orgB = await insertOrg(db, 'b');
+		const now = new Date();
+		await db
+			.insert(user)
+			.values({ id: 'u1', name: 'A', email: 'a@example.com', createdAt: now, updatedAt: now });
+		const future = new Date(Date.now() + 86_400_000);
+		await db.insert(invitation).values([
+			{
+				id: 'ia',
+				organizationId: orgA,
+				email: 'p@example.com',
+				role: 'teacher',
+				status: 'pending',
+				expiresAt: future,
+				inviterId: 'u1',
+				createdAt: now
+			},
+			{
+				id: 'ib',
+				organizationId: orgB,
+				email: 'q@example.com',
+				role: 'admin',
+				status: 'pending',
+				expiresAt: future,
+				inviterId: 'u1',
+				createdAt: now
+			}
+		]);
+		expect((await getPendingInvitation(db, orgA, 'ia')).email).toBe('p@example.com');
+		await expect(getPendingInvitation(db, orgA, 'ib')).rejects.toBeInstanceOf(NotFoundError);
 	});
 });

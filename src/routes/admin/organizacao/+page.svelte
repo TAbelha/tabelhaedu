@@ -275,45 +275,53 @@
 									</div>
 								</Table.Cell>
 								<Table.Cell>
-									<form method="POST" action="?/removeDomain" use:enhance={submitting('remove')}>
-										<input type="hidden" name="hostname" value={domain.hostname} />
-										<Button
-											type="submit"
-											variant="ghost"
-											size="icon"
-											aria-label={`Remover ${domain.hostname}`}
-										>
-											<TrashIcon />
-										</Button>
-									</form>
+									{#if data.canManageDomains}
+										<form method="POST" action="?/removeDomain" use:enhance={submitting('remove')}>
+											<input type="hidden" name="hostname" value={domain.hostname} />
+											<Button
+												type="submit"
+												variant="ghost"
+												size="icon"
+												aria-label={`Remover ${domain.hostname}`}
+											>
+												<TrashIcon />
+											</Button>
+										</form>
+									{/if}
 								</Table.Cell>
 							</Table.Row>
 						{/each}
 					</Table.Body>
 				</Table.Root>
 			{/if}
-			<form
-				method="POST"
-				action="?/addDomain"
-				class="flex gap-2"
-				use:enhance={() => {
-					pending = 'domain';
-					return async ({ result, update }) => {
-						pending = null;
-						if (result.type === 'success') toast.success(String(result.data?.message));
-						else if (result.type === 'failure') toast.error(String(result.data?.message));
-						await update();
-					};
-				}}
-			>
-				<Input
-					name="hostname"
-					placeholder="cursinho.exemplo.com.br"
-					aria-label="Novo domínio"
-					required
-				/>
-				<Button type="submit" variant="outline" disabled={pending === 'domain'}>Adicionar</Button>
-			</form>
+			{#if data.canManageDomains}
+				<form
+					method="POST"
+					action="?/addDomain"
+					class="flex gap-2"
+					use:enhance={() => {
+						pending = 'domain';
+						return async ({ result, update }) => {
+							pending = null;
+							if (result.type === 'success') toast.success(String(result.data?.message));
+							else if (result.type === 'failure') toast.error(String(result.data?.message));
+							await update();
+						};
+					}}
+				>
+					<Input
+						name="hostname"
+						placeholder="cursinho.exemplo.com.br"
+						aria-label="Novo domínio"
+						required
+					/>
+					<Button type="submit" variant="outline" disabled={pending === 'domain'}>Adicionar</Button>
+				</form>
+			{:else}
+				<p class="text-sm text-muted-foreground">
+					Para vincular um domínio, fale com a administração da plataforma.
+				</p>
+			{/if}
 		</Card.Content>
 	</Card.Root>
 </div>

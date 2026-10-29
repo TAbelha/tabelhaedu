@@ -1,6 +1,7 @@
 import { and, asc, eq, gt } from 'drizzle-orm';
 import type { Db } from '../db/index';
 import { invitation, member, user } from '../db/schema/index';
+import { NotFoundError } from '../errors';
 
 export async function listMembers(db: Db, orgId: string) {
 	return db
@@ -34,4 +35,21 @@ export async function listPendingInvitations(db: Db, orgId: string, now = new Da
 			)
 		)
 		.orderBy(asc(invitation.createdAt));
+}
+
+export async function getPendingInvitation(db: Db, orgId: string, id: string, now = new Date()) {
+	const [row] = await db
+		.select({ id: invitation.id, email: invitation.email, role: invitation.role })
+		.from(invitation)
+		.where(
+			and(
+				eq(invitation.id, id),
+				eq(invitation.organizationId, orgId),
+				eq(invitation.status, 'pending'),
+				gt(invitation.expiresAt, now)
+			)
+		)
+		.limit(1);
+	if (!row) throw new NotFoundError();
+	return row;
 }

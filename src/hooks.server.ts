@@ -4,6 +4,8 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { and, eq } from 'drizzle-orm';
 import { resolveAccess } from '#lib/server/access.js';
 import { getAuth } from '#lib/server/auth/instance.js';
+import { isBlockedAuthPath } from '#lib/server/auth/paths.js';
+import { hostAllowed } from '#lib/server/config.js';
 import { member } from '#lib/server/db/schema/index.js';
 import { getPlatform } from '#lib/server/platform.js';
 import { orgCache } from '#lib/server/tenant/cache.js';
@@ -35,6 +37,9 @@ const org: Handle = async ({ event, resolve }) => {
 
 const session: Handle = async ({ event, resolve }) => {
 	if (building) return resolve(event);
+	if (isBlockedAuthPath(event.url.pathname)) return new Response('Not Found', { status: 404 });
+	// Better Auth throws for hosts outside APP_HOSTS; serve those anonymously instead of a 500.
+	if (!hostAllowed(event.url.host, getPlatform().cfg.appHosts)) return resolve(event);
 	const auth = getAuth();
 	const result = await auth.api.getSession({ headers: event.request.headers });
 	if (result) {

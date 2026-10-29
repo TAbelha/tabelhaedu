@@ -7,6 +7,7 @@ export type AuthConfig = {
 	appHosts: string[];
 	platformAdmins: string[];
 	secret?: string;
+	secureCookies?: boolean;
 };
 
 function originsFor(hosts: string[]): string[] {
@@ -20,7 +21,12 @@ export function buildAuthOptions(cfg: AuthConfig) {
 		baseURL: { allowedHosts: cfg.appHosts, protocol: 'auto' },
 		trustedOrigins: originsFor(cfg.appHosts),
 		emailAndPassword: { enabled: true, requireEmailVerification: false, minPasswordLength: 8 },
-		rateLimit: { storage: 'database' },
+		// Workers expose no NODE_ENV, so Better Auth's production defaults never switch on by themselves.
+		rateLimit: { enabled: true, storage: 'database' },
+		advanced: {
+			useSecureCookies: cfg.secureCookies ?? false,
+			ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] }
+		},
 		plugins: [
 			organization({
 				ac,

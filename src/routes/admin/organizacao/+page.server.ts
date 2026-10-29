@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { firstIssue } from '#lib/server/forms.js';
 import { ConflictError, NotFoundError } from '#lib/server/errors.js';
-import { requireStaff } from '#lib/server/guards.js';
+import { requirePlatformAdmin, requireStaff } from '#lib/server/guards.js';
 import { getPlatform } from '#lib/server/platform.js';
 import { orgCache } from '#lib/server/tenant/cache.js';
 import { domainInput, orgProfileInput, orgThemeInput } from '#lib/server/tenant/input.js';
@@ -21,7 +21,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 	return {
 		profile: { name: org.name, logo: org.logo },
 		settings: org.settings,
-		domains: await listDomains(getPlatform().db, org.id)
+		domains: await listDomains(getPlatform().db, org.id),
+		// No domain verification in v0: binding a hostname is a platform operator task.
+		canManageDomains: locals.isPlatformAdmin
 	};
 };
 
@@ -48,6 +50,7 @@ export const actions: Actions = {
 	},
 	addDomain: async ({ locals, request }) => {
 		const { org } = requireStaff(locals, PERM);
+		requirePlatformAdmin(locals);
 		const parsed = domainInput.safeParse(await fields(request));
 		if (!parsed.success) return fail(400, { message: firstIssue(parsed.error) });
 		try {
@@ -61,6 +64,7 @@ export const actions: Actions = {
 	},
 	removeDomain: async ({ locals, request }) => {
 		const { org } = requireStaff(locals, PERM);
+		requirePlatformAdmin(locals);
 		const parsed = domainInput.safeParse(await fields(request));
 		if (!parsed.success) return fail(400, { message: firstIssue(parsed.error) });
 		try {
