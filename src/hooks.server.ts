@@ -6,6 +6,7 @@ import { createAuth, type Auth } from '#lib/server/auth/index.js';
 import { member } from '#lib/server/db/schema/index.js';
 import { getPlatform } from '#lib/server/platform.js';
 import { normalizeHost, resolveOrg, type OrgContext } from '#lib/server/tenant/resolve.js';
+import { orgHead } from '#lib/server/tenant/theme.js';
 
 const ORG_CACHE_TTL_MS = 60_000;
 const orgCache = new Map<string, { org: OrgContext | null; expires: number }>();
@@ -70,6 +71,15 @@ const roles: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
+// Fills %tabelha.head% in app.html with the org's title and theme, so there is no flash of the default theme.
+const theme: Handle = ({ event, resolve }) => {
+	const head = orgHead(event.locals.org);
+	return resolve(event, {
+		// A replacer function keeps `$&`-style patterns in org names literal.
+		transformPageChunk: ({ html }) => html.replace('%tabelha.head%', () => head)
+	});
+};
+
 const securityHeaders: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
 	response.headers.set('X-Frame-Options', 'DENY');
@@ -82,4 +92,4 @@ const securityHeaders: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-export const handle = sequence(locals, org, session, roles, securityHeaders);
+export const handle = sequence(locals, org, session, roles, theme, securityHeaders);
