@@ -22,7 +22,9 @@ const bindingsPath = {
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
-	{ ignores: ['src/lib/components/ui/**', 'worker-configuration.d.ts', 'docs/**'] },
+	{
+		ignores: ['src/lib/components/ui/**', 'worker-configuration.d.ts', 'docs/**', '.superpowers/**']
+	},
 	js.configs.recommended,
 	ts.configs.recommended,
 	svelte.configs.recommended,
