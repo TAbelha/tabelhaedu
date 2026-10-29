@@ -10,7 +10,13 @@ declare global {
 		}
 
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			org: import('./lib/server/tenant/resolve').OrgContext | null;
+			user: { id: string; name: string; email: string } | null;
+			session: { id: string } | null;
+			memberRole: string | null;
+			isPlatformAdmin: boolean;
+		}
 		// interface PageData {}
 		// interface PageState {}
 	}
