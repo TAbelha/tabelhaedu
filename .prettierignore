@@ -11,3 +11,4 @@ docs/superpowers/
 src/lib/components/ui/
 worker-configuration.d.ts
 drizzle/
+.superpowers/

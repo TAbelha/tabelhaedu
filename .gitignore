@@ -25,3 +25,4 @@ vite.config.ts.timestamp-*
 # Local secrets and databases
 .dev.vars
 *.db
+worker-configuration.d.ts
