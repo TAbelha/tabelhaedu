@@ -4,44 +4,44 @@ Plataforma de ensino white-label, básica e aberta. Uma organização (cursinho,
 
 ## Stack
 
-| Camada     | Escolha                                                                  |
-| ---------- | ------------------------------------------------------------------------ |
+| Camada     | Escolha                                                                   |
+| ---------- | ------------------------------------------------------------------------- |
 | Framework  | SvelteKit 3 + Svelte 5 (runes) + `@sveltejs/adapter-cloudflare` (Workers) |
-| UI         | Tailwind CSS 4 + shadcn-svelte (style `nova`, base `mist`, lucide)       |
-| DB         | Drizzle ORM 0.45 + D1 (um banco, `organization_id` nas linhas)           |
-| Auth       | Better Auth + plugin `organization` + access control                     |
-| Arquivos   | R2 (imagens de questões, logos), servido por rota do Worker              |
-| Texto rico | Markdown + LaTeX (`markdown-it` + KaTeX), renderizado no save            |
-| Validação  | zod 4                                                                    |
-| Testes     | Vitest (lógica pura + SQLite em memória com as migrações reais)          |
-| Runtime    | bun (Node >= 22.17 no CI)                                                |
-| Datas      | `YYYY-MM-DD` pra calendário; inteiro ms UTC pra instantes; fuso da org   |
+| UI         | Tailwind CSS 4 + shadcn-svelte (style `nova`, base `mist`, lucide)        |
+| DB         | Drizzle ORM 0.45 + D1 (um banco, `organization_id` nas linhas)            |
+| Auth       | Better Auth + plugin `organization` + access control                      |
+| Arquivos   | R2 (imagens de questões, logos), servido por rota do Worker               |
+| Texto rico | Markdown + LaTeX (`markdown-it` + KaTeX), renderizado no save             |
+| Validação  | zod 4                                                                     |
+| Testes     | Vitest (lógica pura + SQLite em memória com as migrações reais)           |
+| Runtime    | bun (Node >= 22.17 no CI)                                                 |
+| Datas      | `YYYY-MM-DD` pra calendário; inteiro ms UTC pra instantes; fuso da org    |
 
 ## Decisões (log)
 
-| #   | Decisão                                                                                   | Razão                                                    |
-| --- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| D1  | App único SvelteKit (staff, aluno, plataforma), sem monorepo                              | a tentativa com 5 apps travou                            |
-| D2  | SvelteKit 3                                                                               | major atual; o adapter da Cloudflare exige               |
-| D3  | Um D1 com `organization_id` nas linhas; tenant pelo hostname                              | 1 tenant real hoje; D1 por tenant tem caminho documentado |
-| D4  | Tenant = `organization` do Better Auth + `org_settings`/`org_domain` próprios             | membros, convites e papéis prontos                       |
-| D5  | Aluno não é membro da org; acesso vem da matrícula                                        | separa staff de aluno; sem limite de membros             |
-| D6  | Permissões `recurso:ação`; papéis `owner`/`admin`/`teacher`                               | PBAC enxuto; escopo por matéria fica pra depois          |
-| D7  | Identidade global (mesma conta em várias orgs; cookie por hostname)                       | consequência do D3                                       |
-| D8  | Currículo = árvore genérica (`parent_id`, `path`, `depth`, `position`), até 6 níveis      | substitui assunto em texto solto                         |
-| D9  | Currículo e banco de questões são da org; o curso aponta pro currículo                    | reaproveitar de uma turma pra outra                      |
-| D10 | Questão em Markdown + `$…$`/`$$…$$`; HTML gerado no save e guardado                       | leitura sem custo; sem HTML cru (XSS)                    |
-| D11 | Imagens no R2 via `/media/...`, cache imutável; sem SVG                                   | simples; SVG executa script                              |
-| D12 | Simulado referencia a questão viva; mudar gabarito, peso ou anulação recalcula            | sem cópia duplicada; correção determinística             |
-| D13 | Prazo da tentativa imposto no servidor; tentativa vencida fecha na próxima leitura        | não confiar no cronômetro do navegador; sem cron         |
-| D14 | Nota clássica (não TRI), penalização opcional, piso zero por seção e no total             | regra conhecida e explicável                             |
-| D15 | Cronograma do curso: carga semanal por matéria + tópicos na ordem da árvore               | é como cursinho planeja; algoritmo pequeno e testável    |
-| D16 | Datas de calendário em texto; instantes em ms UTC; fuso da org (`America/Sao_Paulo`)      | sem bug de fuso na data da prova                         |
-| D17 | Sem e-mail no v0: convites e links copiáveis na tela                                      | menos infra                                              |
-| D18 | Nunca `db.transaction` (o D1 não tem); `db.batch` + inserts fatiados (<= 100 parâmetros)   | limites do D1                                            |
-| D19 | Schema do Better Auth gerado pela CLI (`bun run auth:schema`), nunca à mão                | evita schema divergente                                  |
-| D20 | Testes de domínio em SQLite em memória (libsql) com as migrações reais; sem Playwright    | mesmo dialeto, rápido                                    |
-| D21 | Rotas de página em PT-BR; `/api/*` em inglês; código e comentários em inglês              | white-label brasileiro                                   |
+| #   | Decisão                                                                                  | Razão                                                     |
+| --- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| D1  | App único SvelteKit (staff, aluno, plataforma), sem monorepo                             | a tentativa com 5 apps travou                             |
+| D2  | SvelteKit 3                                                                              | major atual; o adapter da Cloudflare exige                |
+| D3  | Um D1 com `organization_id` nas linhas; tenant pelo hostname                             | 1 tenant real hoje; D1 por tenant tem caminho documentado |
+| D4  | Tenant = `organization` do Better Auth + `org_settings`/`org_domain` próprios            | membros, convites e papéis prontos                        |
+| D5  | Aluno não é membro da org; acesso vem da matrícula                                       | separa staff de aluno; sem limite de membros              |
+| D6  | Permissões `recurso:ação`; papéis `owner`/`admin`/`teacher`                              | PBAC enxuto; escopo por matéria fica pra depois           |
+| D7  | Identidade global (mesma conta em várias orgs; cookie por hostname)                      | consequência do D3                                        |
+| D8  | Currículo = árvore genérica (`parent_id`, `path`, `depth`, `position`), até 6 níveis     | substitui assunto em texto solto                          |
+| D9  | Currículo e banco de questões são da org; o curso aponta pro currículo                   | reaproveitar de uma turma pra outra                       |
+| D10 | Questão em Markdown + `$…$`/`$$…$$`; HTML gerado no save e guardado                      | leitura sem custo; sem HTML cru (XSS)                     |
+| D11 | Imagens no R2 via `/media/...`, cache imutável; sem SVG                                  | simples; SVG executa script                               |
+| D12 | Simulado referencia a questão viva; mudar gabarito, peso ou anulação recalcula           | sem cópia duplicada; correção determinística              |
+| D13 | Prazo da tentativa imposto no servidor; tentativa vencida fecha na próxima leitura       | não confiar no cronômetro do navegador; sem cron          |
+| D14 | Nota clássica (não TRI), penalização opcional, piso zero por seção e no total            | regra conhecida e explicável                              |
+| D15 | Cronograma do curso: carga semanal por matéria + tópicos na ordem da árvore              | é como cursinho planeja; algoritmo pequeno e testável     |
+| D16 | Datas de calendário em texto; instantes em ms UTC; fuso da org (`America/Sao_Paulo`)     | sem bug de fuso na data da prova                          |
+| D17 | Sem e-mail no v0: convites e links copiáveis na tela                                     | menos infra                                               |
+| D18 | Nunca `db.transaction` (o D1 não tem); `db.batch` + inserts fatiados (<= 100 parâmetros) | limites do D1                                             |
+| D19 | Schema do Better Auth gerado pela CLI (`bun run auth:schema`), nunca à mão               | evita schema divergente                                   |
+| D20 | Testes de domínio em SQLite em memória (libsql) com as migrações reais; sem Playwright   | mesmo dialeto, rápido                                     |
+| D21 | Rotas de página em PT-BR; `/api/*` em inglês; código e comentários em inglês             | white-label brasileiro                                    |
 
 ## Infra Cloudflare
 
@@ -111,16 +111,16 @@ exam_answer (attempt_id, exam_item_id, choice NULL, answered_at)          PK com
 
 ## Papéis e permissões
 
-| Permissão                                   | owner | admin | teacher |
-| ------------------------------------------- | :---: | :---: | :-----: |
-| `organization:update` (marca, domínios)     |   x   |   x   |         |
-| `member:*`, `invitation:*`                  |   x   |   x   |         |
-| `course:*`, `enrollment:*`                  |   x   |   x   |         |
-| `curriculum:*`, `schedule:update`           |   x   |   x   |    x    |
-| `question:*`                                |   x   |   x   |    x    |
-| `exam:create/update/publish`                |   x   |   x   |    x    |
-| `exam:delete`                               |   x   |   x   |         |
-| `results:read/release`                      |   x   |   x   |    x    |
+| Permissão                               | owner | admin | teacher |
+| --------------------------------------- | :---: | :---: | :-----: |
+| `organization:update` (marca, domínios) |   x   |   x   |         |
+| `member:*`, `invitation:*`              |   x   |   x   |         |
+| `course:*`, `enrollment:*`              |   x   |   x   |         |
+| `curriculum:*`, `schedule:update`       |   x   |   x   |    x    |
+| `question:*`                            |   x   |   x   |    x    |
+| `exam:create/update/publish`            |   x   |   x   |    x    |
+| `exam:delete`                           |   x   |   x   |         |
+| `results:read/release`                  |   x   |   x   |    x    |
 
 Aluno não tem papel: o acesso vem de matrícula ativa no curso.
 

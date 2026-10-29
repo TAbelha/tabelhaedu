@@ -1,0 +1,21 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "tabelhaedu",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-10-29",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": { "binding": "ASSETS", "directory": ".svelte-kit/cloudflare" },
+	"workers_dev": true,
+	"preview_urls": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "tabelhaedu-db",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "drizzle"
+		}
+	],
+	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "tabelhaedu-media" }],
+	"vars": { "APP_HOSTS": "", "DEFAULT_ORG_SLUG": "" },
+	"observability": { "enabled": true }
+}
